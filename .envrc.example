@@ -1,22 +1,13 @@
-# openssl rand -base64 32 to generate a random password
-
-export SERVER_PORT=6000
-export SERVER_HOST=127.0.0.1
-
-export JWT_SECRET=""
+export PORT=3000
 
 export DB_HOST=127.0.0.1
 export DB_PORT=5432
-export DB_USER="change_me"
+export DB_USER="user"
 export DB_NAME="postgres"
-export DB_PASS="change_me"
+# openssl rand -base64 32 to generate a random password
+export DB_PASS=""
 export DB_URL="postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
-
-export DB_TEST_PORT=5433
-export DB_TEST_URL="postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_TEST_PORT/$DB_NAME"
 
 export GOOSE_DRIVER="postgres"
 export GOOSE_DBSTRING="$DB_URL"
-export GOOSE_MIGRATION_DIR="./schema"
-
-export PROJECT_ROOT=$(pwd)
+export GOOSE_MIGRATION_DIR="./migrations"

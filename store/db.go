@@ -2,17 +2,16 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
 	"github.com/tatucosmin/hotel-system/config"
 )
 
-func NewPgDatabase(cfg *config.Config) (*sql.DB, error) {
+func NewPgDatabase(cfg *config.Config) (*sqlx.DB, error) {
 	connUrl := cfg.DatabaseUrl()
-	db, err := sql.Open("postgres", connUrl)
+	db, err := sqlx.Open("postgres", connUrl)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
