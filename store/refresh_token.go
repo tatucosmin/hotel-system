@@ -42,7 +42,7 @@ func (r *RefreshTokenStore) generateBase64HashToken(token *jwt.Token) (string, e
 
 func (r *RefreshTokenStore) Create(ctx context.Context, token *jwt.Token, userId uuid.UUID) (*RefreshTokenDb, error) {
 	const query = `
-	INSERT INTO refresh_token (user_id, hashed_token, expires_at) VALUES ($1, $2, $3) RETURNING *`
+	INSERT INTO refresh_tokens (user_id, hashed_token, expires_at) VALUES ($1, $2, $3) RETURNING *`
 
 	encodedHashedToken, err := r.generateBase64HashToken(token)
 	if err != nil {
@@ -64,7 +64,7 @@ func (r *RefreshTokenStore) Create(ctx context.Context, token *jwt.Token, userId
 
 func (r *RefreshTokenStore) ByPK(ctx context.Context, token *jwt.Token, userId uuid.UUID) (*RefreshTokenDb, error) {
 	const query = `
-	SELECT * FROM refresh_token WHERE user_id = $1 AND hashed_token = $2`
+	SELECT * FROM refresh_tokens WHERE user_id = $1 AND hashed_token = $2`
 
 	encodedHashedToken, err := r.generateBase64HashToken(token)
 	if err != nil {
@@ -81,7 +81,7 @@ func (r *RefreshTokenStore) ByPK(ctx context.Context, token *jwt.Token, userId u
 
 func (r *RefreshTokenStore) RevokeAllFromUser(ctx context.Context, userId uuid.UUID) error {
 	const query = `
-	DELETE FROM refresh_token WHERE user_id = $1`
+	DELETE FROM refresh_tokens WHERE user_id = $1`
 
 	if _, err := r.db.ExecContext(ctx, query, userId); err != nil {
 		return fmt.Errorf("failed to revoke all tokens for %v: %w", userId, err)

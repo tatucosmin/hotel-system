@@ -79,7 +79,6 @@ func (s *UserStore) CreateUser(ctx context.Context, email, password string) (*Us
 	var user User
 	if err := s.db.GetContext(ctx, &user, query, email, hashedPassword); err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
-
 	}
 
 	return &user, nil

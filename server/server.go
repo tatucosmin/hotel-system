@@ -43,11 +43,11 @@ func (s *Server) Start(ctx context.Context) error {
 	middlewareLogger := NewLoggerMiddleware(s.logger)
 	middlewareAuth := NewAuthMiddleware(s.jwtManager, s.store.User)
 
+	middleware := middlewareLogger(middlewareAuth(mux))
+
 	server := &http.Server{
-		Addr: net.JoinHostPort(s.Config.ServerHost, s.Config.ServerPort),
-		Handler: middlewareLogger(
-			middlewareAuth(mux),
-		),
+		Addr:    net.JoinHostPort(s.Config.ServerHost, s.Config.ServerPort),
+		Handler: middleware,
 	}
 
 	go func() {
