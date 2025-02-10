@@ -27,7 +27,7 @@ func TestTicketStore(t *testing.T) {
 	user, err := userStore.CreateUser(ctx, "test@test.com", "test")
 	require.NoError(t, err)
 
-	ticket, err := ticketStore.Create(ctx, "test ticket", user.Id, store.TicketPriorityUrgent)
+	ticket, err := ticketStore.Create(ctx, "test ticket", "test description", user.Id, store.TicketPriorityUrgent)
 	require.NoError(t, err)
 
 	require.NotNil(t, ticket.Id)
@@ -37,16 +37,13 @@ func TestTicketStore(t *testing.T) {
 	require.Equal(t, user.Id, ticket.Creator)
 	require.True(t, now.After(ticket.CreatedAt))
 
-	assignee, err := userStore.CreateUser(ctx, "assignee@test.com", "test")
 	require.NoError(t, err)
 
-	err = ticketStore.Update(ctx, ticket.Title, ticket.Id, assignee.Id, store.TicketPriorityUrgent)
+	err = ticketStore.Update(ctx, ticket.Id, store.TicketPriorityUrgent, store.TicketStatusCreated)
 	require.NoError(t, err)
 
 	ticket, err = ticketStore.ById(ctx, ticket.Id)
 	require.NoError(t, err)
-
-	require.Equal(t, assignee.Id, ticket.CurrentAssignee)
 
 	err = ticketStore.Delete(ctx, ticket.Id)
 	require.NoError(t, err)

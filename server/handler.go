@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/tatucosmin/hotel-system/store"
 )
 
 type SignupRequest struct {
@@ -216,5 +218,179 @@ func (s *Server) refreshTokenHandler() http.HandlerFunc {
 
 		return nil
 
+	})
+}
+
+// * Realistically, this should never fail because the user is already authenticated
+// * and shouldn't be called in public routes such as /api/auth/*
+
+func (s *Server) getUserFromContext(ctx context.Context) *store.User {
+	user, ok := ctx.Value(ContextUserKey{}).(*store.User)
+	if !ok {
+		return nil
+	}
+	return user
+}
+
+type TicketRequest struct {
+	Id uuid.UUID `json:"id"`
+}
+
+func (req TicketRequest) Validate() error {
+	if req.Id == uuid.Nil {
+		return errors.New("id is required")
+	}
+
+	return nil
+}
+
+func (s *Server) getTicketHandler() http.HandlerFunc {
+	return handler(func(w http.ResponseWriter, r *http.Request) error {
+
+		user := s.getUserFromContext(r.Context())
+
+		req, err := decode[TicketRequest](r)
+		if err != nil {
+			return NewApiError(http.StatusBadRequest, err)
+		}
+
+		ticket, err := s.store.Ticket.ById(r.Context(), req.Id)
+		if err != nil {
+			status := http.StatusInternalServerError
+			if errors.Is(err, sql.ErrNoRows) {
+				status = http.StatusNotFound
+			}
+			return NewApiError(status, err)
+		}
+
+		if ticket.Creator != user.Id {
+			return NewApiError(http.StatusForbidden, fmt.Errorf("you are not allowed to access this ticket"))
+		}
+
+		if err := encode[ApiResponse[store.Ticket]](w, http.StatusOK, ApiResponse[store.Ticket]{
+			Data: ticket,
+		}); err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		return nil
+	})
+}
+
+type GetAllTicketsResponse struct {
+	Tickets []store.Ticket `json:"tickets"`
+}
+
+func (s *Server) getAllTicketsHandler() http.HandlerFunc {
+	return handler(func(w http.ResponseWriter, r *http.Request) error {
+		tickets, err := s.store.Ticket.All(r.Context())
+		if err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		if err := encode[ApiResponse[GetAllTicketsResponse]](w, http.StatusOK, ApiResponse[GetAllTicketsResponse]{
+			Data: &GetAllTicketsResponse{
+				Tickets: tickets,
+			},
+		}); err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+		return nil
+	})
+}
+
+type CreateTicketRequest struct {
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Priority    store.TicketPriority `json:"priority"`
+}
+
+func (req CreateTicketRequest) Validate() error {
+	if req.Title == "" {
+		return errors.New("title is required")
+	}
+
+	if req.Description == "" {
+		return errors.New("description is required")
+	}
+
+	if !req.Priority.WithinBounds() {
+		return errors.New("priority is required")
+	}
+
+	return nil
+}
+
+func (s *Server) createTicketHandler() http.HandlerFunc {
+	return handler(func(w http.ResponseWriter, r *http.Request) error {
+
+		req, err := decode[CreateTicketRequest](r)
+
+		if err != nil {
+			return NewApiError(http.StatusBadRequest, err)
+		}
+
+		user := s.getUserFromContext(r.Context())
+
+		ticket, err := s.store.Ticket.Create(r.Context(), req.Title, req.Description, user.Id, req.Priority)
+
+		if err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		if err := encode[ApiResponse[store.Ticket]](w, http.StatusCreated, ApiResponse[store.Ticket]{
+			Data: ticket,
+		}); err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		return nil
+	})
+}
+
+type UpdateTicketRequest struct {
+	Id       uuid.UUID            `json:"id"`
+	Priority store.TicketPriority `json:"priority"`
+	Status   store.TicketStatus   `json:"status"`
+}
+
+func (req UpdateTicketRequest) Validate() error {
+	if req.Id == uuid.Nil {
+		return errors.New("id is required")
+	}
+
+	if !req.Priority.WithinBounds() {
+		return errors.New("priority is required")
+	}
+
+	if !req.Status.WithinBounds() {
+		return errors.New("status is required")
+	}
+
+	return nil
+}
+
+func (s *Server) updateTicketHandler() http.HandlerFunc {
+	return handler(func(w http.ResponseWriter, r *http.Request) error {
+
+		req, err := decode[UpdateTicketRequest](r)
+
+		if err != nil {
+			return NewApiError(http.StatusBadRequest, err)
+		}
+
+		err = s.store.Ticket.Update(r.Context(), req.Id, req.Priority, req.Status)
+
+		if err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		if err := encode[ApiResponse[struct{}]](w, http.StatusOK, ApiResponse[struct{}]{
+			Message: "ticket has been updated",
+		}); err != nil {
+			return NewApiError(http.StatusInternalServerError, err)
+		}
+
+		return nil
 	})
 }

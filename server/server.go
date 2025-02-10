@@ -36,14 +36,22 @@ func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Start(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ping", s.ping)
+	// auth
 	mux.HandleFunc("POST /api/auth/signup", s.signUpHandler())
 	mux.HandleFunc("POST /api/auth/signin", s.signInHandler())
 	mux.HandleFunc("POST /api/auth/refresh", s.refreshTokenHandler())
+	// ticket
+	mux.HandleFunc("GET /api/ticket", s.getTicketHandler())
+	mux.HandleFunc("GET /api/tickets", s.getAllTicketsHandler()) // admin route
+
+	mux.HandleFunc("POST /api/ticket", s.createTicketHandler())
+	mux.HandleFunc("PUT /api/ticket", s.updateTicketHandler())
 
 	middlewareLogger := NewLoggerMiddleware(s.logger)
 	middlewareAuth := NewAuthMiddleware(s.jwtManager, s.store.User)
+	middlewarePerms := NewPermissionsMiddleware()
 
-	middleware := middlewareLogger(middlewareAuth(mux))
+	middleware := middlewareLogger(middlewareAuth(middlewarePerms(mux)))
 
 	server := &http.Server{
 		Addr:    net.JoinHostPort(s.Config.ServerHost, s.Config.ServerPort),

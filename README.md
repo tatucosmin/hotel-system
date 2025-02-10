@@ -1,8 +1,5 @@
-# hotel-system
-
-hotel-system is a project aimed to mimic a real-world scenario of an API for a hotel with these features:
-
 ## TODO:
 
-- [ ] Endpoints to interact with the users store
-- [ ] 
+- [x] Middleware for user permission
+- [ ] Handlers to interact with the ticket store in order to create tickets
+- [ ] Automatically store closed tickets to S3 via a worker

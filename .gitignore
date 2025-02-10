@@ -1,1 +1,11 @@
+# environment
 .envrc
+
+# terraform
+terraform/*
+!terraform/main.tf
+
+temp
+
+# localstack
+volume

@@ -1,10 +1,13 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/tatucosmin/hotel-system/store"
 )
 
 type ApiError struct {
@@ -67,4 +70,12 @@ func decode[T Validator](r *http.Request) (T, error) {
 		return v, err
 	}
 	return v, nil
+}
+
+func GetUserFromContext(ctx context.Context) (*store.User, error) {
+	user, ok := ctx.Value(ContextUserKey{}).(*store.User)
+	if !ok {
+		return nil, fmt.Errorf("failed to get user from context")
+	}
+	return user, nil
 }

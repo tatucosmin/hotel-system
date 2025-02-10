@@ -25,6 +25,34 @@ func WithUserContext(ctx context.Context, user *store.User) context.Context {
 	return context.WithValue(ctx, ContextUserKey{}, user)
 }
 
+var admin_routes = []string{"/api/tickets"}
+
+func NewPermissionsMiddleware() func(h http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/auth") {
+				h.ServeHTTP(w, r)
+				return
+			}
+
+			user, err := GetUserFromContext(r.Context())
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			for _, route := range admin_routes {
+				if strings.HasPrefix(r.URL.Path, route) && !user.HasRole(store.RoleAdmin) {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+			}
+
+			h.ServeHTTP(w, r)
+		})
+	}
+}
+
 func NewAuthMiddleware(jwtManager *JwtManager, userStore *store.UserStore) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

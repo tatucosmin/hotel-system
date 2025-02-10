@@ -16,16 +16,17 @@ CREATE TABLE refresh_tokens (
     expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '1 day',
     PRIMARY KEY (user_id, hashed_token)
 );
-CREATE TYPE ticket_status AS ENUM ('created', 'in_progress', 'resolved', 'closed');
 
 CREATE TABLE tickets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
     creator UUID REFERENCES users(id) ON DELETE CASCADE,
     current_assignee UUID REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    priority SMALLINT NOT NULL DEFAULT 3
+    priority SMALLINT NOT NULL DEFAULT 3,
+    status SMALLINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE ticket_replies (
