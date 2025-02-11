@@ -45,7 +45,12 @@ ticketr is a ticket management system that allows users to create, update, and m
     make db_migrate_up
     ```
 
-5. Run terraform and 
+5. Run terraform
+   ```sh
+    cd terraform
+    terraform plan
+    terraform apply
+    ```
 
 5. Start the server:
     ```sh
