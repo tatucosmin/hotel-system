@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tatucosmin/hotel-system/store"
+	"github.com/tatucosmin/hotel-system/workers"
 )
 
 type SignupRequest struct {
@@ -321,6 +322,11 @@ func (req CreateTicketRequest) Validate() error {
 	return nil
 }
 
+type CreateTicketResponse struct {
+	store.Ticket
+	Priority string `json:"priority"`
+}
+
 func (s *Server) createTicketHandler() http.HandlerFunc {
 	return handler(func(w http.ResponseWriter, r *http.Request) error {
 
@@ -377,6 +383,18 @@ func (s *Server) updateTicketHandler() http.HandlerFunc {
 
 		if err != nil {
 			return NewApiError(http.StatusBadRequest, err)
+		}
+
+		if req.Status == store.TicketStatusClosed {
+			err = workers.SaveTicketToS3(r.Context(), req.Id, s.store.TicketReply, s.Config)
+			if err != nil {
+				return NewApiError(http.StatusInternalServerError, err)
+			}
+
+			err = s.store.Ticket.Delete(r.Context(), req.Id)
+			if err != nil {
+				return NewApiError(http.StatusInternalServerError, err)
+			}
 		}
 
 		err = s.store.Ticket.Update(r.Context(), req.Id, req.Priority, req.Status)
